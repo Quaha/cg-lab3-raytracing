@@ -5,6 +5,8 @@
 #include <vector>
 #include <cassert>
 
+// ==================== Vectors ====================
+
 template <size_t dimension, typename T>
 struct Vector {
     T data[dimension];
@@ -214,11 +216,6 @@ Vector<3, T> cross(Vector<3, T> v1, Vector<3, T> v2) {
     return Vector<3, T>(v1.y * v2.z - v1.z * v2.y, v1.z * v2.x - v1.x * v2.z, v1.x * v2.y - v1.y * v2.x);
 }
 
-template <typename T>
-T scalar(Vector<3, T> v1, Vector<3, T> v2) {
-    return T(v1.x * v2.x + v1.y * v2.y + v1.z * v2.z);
-}
-
 template <size_t dimension, typename T> 
 std::ostream& operator<<(std::ostream& out, const Vector<dimension, T>& v) {
     for (size_t i = 0; i != dimension; ++i) {
@@ -226,6 +223,8 @@ std::ostream& operator<<(std::ostream& out, const Vector<dimension, T>& v) {
     }
     return out;
 }
+
+// ==================== Functions ====================
 
 template<typename T> 
 T clamp(T f1, T f2, T f3) {
@@ -237,3 +236,79 @@ T clamp(T f1, T f2, T f3) {
     }
     return f1;
 }
+
+constexpr float PI = 3.14159265f;
+
+inline float degreesToRadians(float degrees) {
+    return degrees * PI / 180.0f;
+}
+
+inline float radiansToDegrees(float radians) {
+    return radians * 180.0f / PI;
+}
+
+// ==================== Objects ====================
+
+struct Ray {
+
+    Vector3f& start;
+    Vector3f& direction; // should be normalized
+
+    Ray(Vector3f& st, Vector3f& dir) : start(st), direction(dir) {
+        direction.normalize();
+    }
+};
+
+struct Sphere {
+
+    Vector3f center;
+    float radius;
+
+    Sphere(const Vector3f& c, float r) : center(c), radius(r) {}
+    Sphere(float x, float y, float z, float r): radius(r) {
+        center = Vector3f(x, y, z);
+    }
+
+    bool processRayIntersect(const Ray& ray, float& intersect_dist) const {
+        return processRayIntersect(ray.start, ray.direction, intersect_dist);
+    }
+
+    bool processRayIntersect(const Vector3f& start, const Vector3f& direction, float& intersect_dist) const {
+
+        /* These equations could be derived from this system:
+        *   
+        *   / (v - center, v - center) = radius ^ 2
+        *  <| 
+        *   \ b = start + direction * t, t in R
+        */   
+
+        Vector3f L = start - center;
+
+        float a = 1.0f; // because direction is normilized
+        float b = 2.0f * (L * direction);
+        float c = L * L - radius * radius;
+
+        float D2 = b * b - 4.0f * c;
+
+        if (D2 < 0) {
+            return false;
+        }
+
+        float D = sqrtf(D2);
+
+        float t1 = (-b - D) / 2.0f;
+        float t2 = (-b + D) / 2.0f;
+
+        if (t1 >= 0.0f) {
+            intersect_dist = t1;
+            return true;
+        }
+        else if (t2 >= 0.0f) {
+            intersect_dist = t2;
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+};

@@ -1,6 +1,9 @@
 ﻿#include "RayTracer.hpp"
 
 int main() {
-    render();
+
+    RayTracer ray_tracer(1280, 720);
+    ray_tracer.render();
+
     return 0;
 }
