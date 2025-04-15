@@ -247,33 +247,44 @@ inline float radiansToDegrees(float radians) {
     return radians * 180.0f / PI;
 }
 
-// ==================== Objects ====================
+// ==================== Figures ====================
 
 struct Ray {
 
-    Vector3f& start;
-    Vector3f& direction; // should be normalized
+    Vector3f start;
+    Vector3f direction; // should be normalized
 
-    Ray(Vector3f& st, Vector3f& dir) : start(st), direction(dir) {
-        direction.normalize();
+    Ray(const Vector3f& start, const Vector3f& direction) {
+        this->start = start;
+        this->direction = direction;
+
+        this->direction.normalize();
     }
 };
 
-struct Sphere {
+struct Figure {
 
-    Vector3f center;
-    float radius;
-
-    Sphere(const Vector3f& c, float r) : center(c), radius(r) {}
-    Sphere(float x, float y, float z, float r): radius(r) {
-        center = Vector3f(x, y, z);
-    }
+    virtual bool processRayIntersect(const Vector3f& start, const Vector3f& direction, float& intersect_dist) const = 0;
 
     bool processRayIntersect(const Ray& ray, float& intersect_dist) const {
         return processRayIntersect(ray.start, ray.direction, intersect_dist);
     }
 
-    bool processRayIntersect(const Vector3f& start, const Vector3f& direction, float& intersect_dist) const {
+};
+
+struct Sphere : Figure {
+
+    Vector3f center;
+    float radius;
+
+    Sphere(const Vector3f& center, float radius) : center(center), radius(radius) {}
+    Sphere(float x, float y, float z, float radius): radius(radius) {
+        center = Vector3f(x, y, z);
+    }
+
+    bool processRayIntersect(const Vector3f& start, 
+                             const Vector3f& direction,
+                             float& intersect_dist) const override { 
 
         /* These equations could be derived from this system:
         *   
