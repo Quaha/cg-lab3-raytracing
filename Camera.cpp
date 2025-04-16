@@ -1,54 +1,53 @@
+#include <cmath>
+
 #include "Camera.hpp"
 
 #include "geometry.hpp"
 
-Camera::Camera(const Vector3f& position, float FOV) {
-	this->position = position;
-	this->FOV = FOV;
+Camera::Camera(const Vector3f& position, const Vector3f& target, float FOV)
+    : position(position), FOV(FOV)
+{
+    Vector3f direction = (target - position).normalize();
+
+    yaw = atan2(direction.x, -direction.z);
+    pitch = asin(-direction.y);
+
+    updateVectors();
 }
 
-void Camera::setPosition(const Vector3f& position) {
-	this->position = position;
-}
+void Camera::updateVectors() {
+    forward = Vector3f(sin(yaw) * cos(pitch),
+                       -sin(pitch),
+                       -cos(yaw) * cos(pitch)).normalize();
 
-void Camera::setPosition(float x, float y, float z) {
-	this->position = Vector3f(x, y, z);
+    right = cross(forward, Vector3f(0.0f, 1.0f, 0.0f)).normalize();
+    up = cross(right, forward).normalize();
 }
 
 Vector3f Camera::getPosition() const {
-	return position;
-}
-
-void Camera::setFOV(float FOV) {
-	this->FOV = FOV;
-}
-
-float Camera::getFOV() const {
-	return FOV;
+    return position;
 }
 
 Vector3f Camera::getForward() const {
-	return FORWARD;
+    return forward;
 }
 
 Vector3f Camera::getRight() const {
-	return RIGHT;
+    return right;
 }
 
 Vector3f Camera::getUp() const {
-	return UP;
+    return up;
 }
 
-void Camera::rotateXZ(float angle) {
-	xz_angle += clamp(angle, -360.0f, 360.0f);
-	if (xz_angle < 0.0f) {
-		xz_angle += 360.0f;
-	}
-	if (xz_angle > 360.0f) {
-		xz_angle -= 360.0f;
-	}
+float Camera::getFOV() const {
+    return FOV;
 }
 
-void Camera::rotateY(float angle) {
-	angle = clamp(y_angle + angle, -89.0f, 89.0f);
+void Camera::rotate(float yaw_delta, float pitch_delta) {
+    yaw += yaw_delta;
+    pitch += pitch_delta;
+
+    pitch = clamp(pitch, -PI / 2.0f, PI / 2.0f);
+    updateVectors();
 }

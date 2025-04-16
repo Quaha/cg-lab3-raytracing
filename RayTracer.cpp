@@ -19,14 +19,30 @@ void RayTracer::initObjects() {
     Material green_surface(Vector3f(0.2f, 0.7f, 0.3f));
     Material blue_surface(Vector3f(0.1f, 0.1f, 0.8f));
 
-    this->objects.push_back(Primitive(Vector3f(-0.3f, -0.2f, -1.5f), 0.33f, red_surface));
-    this->objects.push_back(Primitive(Vector3f(0.3f, -0.2f, -1.5f), 0.25f, blue_surface));
-    this->objects.push_back(Primitive(Vector3f(0.0f, 0.0f, -2.0f), 0.5f, green_surface));
+    this->objects.push_back(Primitive(Vector3f(-0.3f, 0.2f, 0.0f), 0.33f, red_surface));
+    this->objects.push_back(Primitive(Vector3f(0.3f, 0.2f, 0.0f), 0.25f, blue_surface));
+    this->objects.push_back(Primitive(Vector3f(0.0f, 0.0f, -0.5f), 0.5f, green_surface));
 }
 
 void RayTracer::initCameras() {
-    this->cameras.push_back(Camera(Vector3f(0.0f, 0.0f, 0.0f), degreesToRadians(90.0f)));
-    this->cameras.push_back(Camera(Vector3f(0.0f, 0.0f, 0.0f), degreesToRadians(90.0f)));
+
+    Camera camera1(Vector3f(0.0f, 0.0f, 1.0f),
+                   Vector3f(0.0f, 0.0f, 0.0f),
+                   degreesToRadians(90.0f));
+
+    this->cameras.push_back(camera1);
+
+    Camera camera2(Vector3f(-1.0f, -3.0f, -1.0f),
+                   Vector3f(0.0f, 0.0f, 0.0f),
+                   degreesToRadians(90.0f));
+
+    this->cameras.push_back(camera2);
+
+    Camera camera3(Vector3f(-1.0f, 3.0f, -2.0f),
+        Vector3f(0.0f, 0.0f, 0.0f),
+        degreesToRadians(90.0f));
+
+    this->cameras.push_back(camera3);
 }
 
 RayTracer::RayTracer(unsigned int width,
@@ -86,13 +102,11 @@ void RayTracer::render() {
                 float screen_aspect_ratio = width / (float)height;
 
                 float x = (2 * (j + 0.5f) / (float)width - 1) * scale * screen_aspect_ratio;
-                float y = -(2 * (i + 0.5f) / (float)height - 1) * scale;
-
-                // y = -(...) due to the that the y-axis is initially pointing downwards
+                float y = (2 * (i + 0.5f) / (float)height - 1) * scale;
 
                 Vector3f direction = (camera.getRight() * x +
-                    camera.getUp() * y +
-                    camera.getForward()).normalize();
+                                      camera.getUp() * y +
+                                      camera.getForward()).normalize();
 
                 Ray ray(camera.getPosition(), direction);
                 frame_buffer[j + i * width] = castRay(ray);

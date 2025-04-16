@@ -13,7 +13,6 @@ private:
 	const unsigned int width;
 	const unsigned int height;
 
-
 	std::vector<Primitive> objects;
 	std::vector<Camera> cameras;
 
