@@ -270,6 +270,8 @@ struct Figure {
         return processRayIntersect(ray.start, ray.direction, intersect_dist);
     }
 
+    virtual ~Figure() = default;
+
 };
 
 struct Sphere : Figure {

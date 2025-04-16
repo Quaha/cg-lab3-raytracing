@@ -2,13 +2,41 @@
 #include <cmath>
 #include <vector>
 #include <algorithm>
+#include <format>
 #include <limits>
 
 #include "RayTracer.hpp"
+
 #include "geometry.hpp"
 #include "Camera.hpp"
+#include "Material.hpp"
+#include "Primitive.hpp"
+#include "PNGsaver.hpp"
 
-#include "lodepng.h"
+void RayTracer::initObjects() {
+    
+    Material red_surface(Vector3f(0.67f, 0.1f, 0.14f));
+    Material green_surface(Vector3f(0.2f, 0.7f, 0.3f));
+    Material blue_surface(Vector3f(0.1f, 0.1f, 0.8f));
+
+    this->objects.push_back(Primitive(Vector3f(-0.3f, -0.2f, -1.5f), 0.33f, red_surface));
+    this->objects.push_back(Primitive(Vector3f(0.3f, -0.2f, -1.5f), 0.25f, blue_surface));
+    this->objects.push_back(Primitive(Vector3f(0.0f, 0.0f, -2.0f), 0.5f, green_surface));
+}
+
+void RayTracer::initCameras() {
+    this->cameras.push_back(Camera(Vector3f(0.0f, 0.0f, 0.0f), degreesToRadians(90.0f)));
+    this->cameras.push_back(Camera(Vector3f(0.0f, 0.0f, 0.0f), degreesToRadians(90.0f)));
+}
+
+RayTracer::RayTracer(unsigned int width,
+                     unsigned int height): width(width), height(height) {
+    
+    this->background_color = Vector3f(0.2f, 0.7f, 0.8f);
+
+    initCameras();
+    initObjects();
+}
 
 Primitive& RayTracer::detectNearestObject(const Ray& ray) {
     float lowest_dist = std::numeric_limits<float>::max();
@@ -37,77 +65,39 @@ Vector3f RayTracer::castRay(const Ray& ray) {
     return nearest_object.material.color;
 }
 
-void RayTracer::initObjects() {
-    
-    Material red_surface(Vector3f(0.67f, 0.1f, 0.14f));
-    Material green_surface(Vector3f(0.2f, 0.7f, 0.3f));
-    Material blue_surface(Vector3f(0.1f, 0.1f, 0.8f));
-
-    this->objects.push_back(Primitive(Vector3f(-0.3f, -0.2f, -1.5f), 0.33f, red_surface));
-    this->objects.push_back(Primitive(Vector3f(0.3f, -0.2f, -1.5f), 0.25f, blue_surface));
-    this->objects.push_back(Primitive(Vector3f(0.0f, 0.0f, -2.0f), 0.5f, green_surface));
-}
-
-RayTracer::RayTracer(unsigned int width,
-                     unsigned int height): width(width), height(height) {
-    
-    this->background_color = Vector3f(0.2f, 0.7f, 0.8f);
-
-    this->camera = Camera(Vector3f(0, 0, 0), Vector3f(0, 0, 0), degreesToRadians(45.0f));
-
-    initObjects();
-}
 
 void RayTracer::render() {
 
     std::vector<Vector3f> frame_buffer(width * height);
 
-    for (size_t i = 0; i < height; ++i) {
-        for (size_t j = 0; j < width; ++j) {
-            float x = (2 * (j) / (float)width - 1) * tan(camera.getFOV() / 2.0f) * width / (float)height;
-            float y = -(2 * (i) / (float)height - 1) * tan(camera.getFOV() / 2.0f);
-            Vector3f dir = Vector3f(x, y, -1).normalize();
+    for (size_t k = 0; k < cameras.size(); ++k) {
+        const Camera& camera = cameras[k];
+        for (size_t i = 0; i < height; ++i) {
+            for (size_t j = 0; j < width; ++j) {
 
-            Ray ray(camera.getPosition(), dir);
-            frame_buffer[j + i * width] = castRay(ray);
+                /*
+                * 1. xp = (j + 0.5) / width: j in [0, width] -> [0, 1]
+                * 2. (2 * xp - 1): xp in [0, 1] -> xp in [-1, 1]
+                * 3. xp *  tan(camera.getFOV() / 2): Conversion depending on FOV
+                * 4. width / heigh: Correction due to differences in the sides
+                */
+
+                float scale = tan(camera.getFOV() / 2.0f);
+                float screen_aspect_ratio = width / (float)height;
+
+                float x = (2 * (j + 0.5f) / (float)width - 1) * scale * screen_aspect_ratio;
+                float y = -(2 * (i + 0.5f) / (float)height - 1) * scale;
+
+                // y = -(...) due to the that the y-axis is initially pointing downwards
+
+                Vector3f direction = (camera.getRight() * x +
+                    camera.getUp() * y +
+                    camera.getForward()).normalize();
+
+                Ray ray(camera.getPosition(), direction);
+                frame_buffer[j + i * width] = castRay(ray);
+            }
         }
-    }
-
-    saveAsPNG(frame_buffer);
-}
-
-void RayTracer::saveAsPNG(std::vector<Vector3f> frame_buffer) const{
-    // Массив RGBA (lodepng требует 4 канала)
-    std::vector<unsigned char> image(width * height * 4);
-    for (unsigned i = 0; i < width * height; ++i) {
-        image[4 * i + 0] = static_cast<unsigned char>(255 * clamp(frame_buffer[i][0], 0.f, 1.f)); // R
-        image[4 * i + 1] = static_cast<unsigned char>(255 * clamp(frame_buffer[i][1], 0.f, 1.f)); // G
-        image[4 * i + 2] = static_cast<unsigned char>(255 * clamp(frame_buffer[i][2], 0.f, 1.f)); // B
-        image[4 * i + 3] = 255; // A (прозрачность — полностью непрозрачный)
-    }
-
-    // Сохранение в PNG
-    unsigned error = lodepng::encode("out.png", image, width, height);
-
-    if (error) {
-        std::cout << "An error occurred while saving to png: " << lodepng_error_text(error) << std::endl;
-    }
-}
-
-void RayTracer::saveAsPNG(std::vector<Vector4f> frame_buffer) const{
-    // Массив RGBA (lodepng требует 4 канала)
-    std::vector<unsigned char> image(width * height * 4);
-    for (unsigned i = 0; i < width * height; ++i) {
-        image[4 * i + 0] = static_cast<unsigned char>(255 * clamp(frame_buffer[i][0], 0.f, 1.f)); // R
-        image[4 * i + 1] = static_cast<unsigned char>(255 * clamp(frame_buffer[i][1], 0.f, 1.f)); // G
-        image[4 * i + 2] = static_cast<unsigned char>(255 * clamp(frame_buffer[i][2], 0.f, 1.f)); // B
-        image[4 * i + 3] = static_cast<unsigned char>(255 * clamp(frame_buffer[i][3], 0.f, 1.f)); // A
-    }
-
-    // Сохранение в PNG
-    unsigned error = lodepng::encode("out.png", image, width, height);
-
-    if (error) {
-        std::cout << "An error occurred while saving to png: " << lodepng_error_text(error) << std::endl;
+        PNGsaver::saveAsPNG(std::format("photo{}.png", k), frame_buffer, width, height);
     }
 }

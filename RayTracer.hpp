@@ -5,6 +5,7 @@
 #include "geometry.hpp"
 #include "Camera.hpp"
 #include "Primitive.hpp"
+#include "Material.hpp"
 
 class RayTracer {
 private:
@@ -12,9 +13,9 @@ private:
 	const unsigned int width;
 	const unsigned int height;
 
-	Camera camera;
 
 	std::vector<Primitive> objects;
+	std::vector<Camera> cameras;
 
 	Vector3f background_color;
 
@@ -23,14 +24,11 @@ private:
 	Vector3f castRay(const Ray& ray);
 
 	void initObjects();
-
-	void saveAsPNG(std::vector<Vector3f> frame_buffer) const;
-	void saveAsPNG(std::vector<Vector4f> frame_buffer) const;
+	void initCameras();
 
 public:
 
-	RayTracer(unsigned int width,
-			  unsigned int height);
+	RayTracer(unsigned int width, unsigned int height);
 
 	void render();
 };
