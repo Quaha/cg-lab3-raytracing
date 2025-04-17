@@ -21,9 +21,11 @@ private:
 	Vector3f ambient_light = Vector3f(0.1f, 0.1f, 0.1f);
 	Vector3f background_color = Vector3f(0.2f, 0.7f, 0.8f);
 
+	const size_t REFLECTION_DEPTH = 10;
+
 private:
 	Primitive& detectNearestObject(const Ray& ray);
-	Vector3f castRay(const Ray& ray);
+	Vector3f castRay(const Ray& ray, size_t depth);
 
 	void initObjects();
 	void initCameras();

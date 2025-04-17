@@ -16,39 +16,44 @@
 
 void RayTracer::initObjects() {
     
-    Material red_surface(Vector3f(0.67f, 0.1f, 0.14f), 1.0f, 125.0f, 0.2f);
-    Material green_surface(Vector3f(0.2f, 0.7f, 0.3f), 1.0f, 5.0f, 0.2f);
-    Material blue_surface(Vector3f(0.1f, 0.1f, 0.8f), 1.0f, 60.0f, 0.15f);
+    Material red_surface(Vector3f(0.67f, 0.1f, 0.14f), 1.0f, 200.0f, 1.5f, true, 0.1f);
+    Material green_surface(Vector3f(0.2f, 0.7f, 0.3f), 1.0f, 5.0f, 0.1f, false, 0.0f);
+    Material blue_surface(Vector3f(0.1f, 0.1f, 0.8f), 1.0f, 60.0f, 0.2f, false, 0.0f);
+    Material reflector_surface(Vector3f(0.0f, 0.0f, 0.0f), 0.0f, 500.0f, 5.0f, true, 0.85f);
 
-    this->objects.push_back(Primitive(Vector3f(-0.5f, 0.2f, 0.0f), 0.33f, red_surface));
+    this->objects.push_back(Primitive(Vector3f(-0.5f, 0.2f, 0.3f), 0.33f, red_surface));
     this->objects.push_back(Primitive(Vector3f(0.3f, 0.2f, 0.0f), 0.25f, blue_surface));
     this->objects.push_back(Primitive(Vector3f(0.0f, 0.0f, -0.5f), 0.5f, green_surface));
+
+    this->objects.push_back(Primitive(Vector3f(1.2f, -0.1f, -0.36f), 0.4f, reflector_surface));
+    this->objects.push_back(Primitive(Vector3f(-1.3f, -0.3f, 0.27f), 0.34f, reflector_surface));
 }
 
 void RayTracer::initCameras() {
 
-    Camera camera1(Vector3f(0.0f, 0.0f, 1.0f),
+    Camera camera1(Vector3f(0.0f, 0.0f, 2.0f),
                    Vector3f(0.0f, 0.0f, 0.0f),
-                   degreesToRadians(90.0f));
+                   degreesToRadians(60.0f));
 
     this->cameras.push_back(camera1);
 
     Camera camera2(Vector3f(-1.0f, -3.0f, -1.0f),
                    Vector3f(0.0f, 0.0f, 0.0f),
-                   degreesToRadians(90.0f));
+                   degreesToRadians(60.0f));
 
     this->cameras.push_back(camera2);
 
     Camera camera3(Vector3f(-1.0f, 3.0f, -2.0f),
         Vector3f(0.0f, 0.0f, 0.0f),
-        degreesToRadians(90.0f));
+        degreesToRadians(60.0f));
 
     this->cameras.push_back(camera3);
 }
 
 void RayTracer::initLights() {
-    this->lights.push_back(Light(Vector3f(2.0f, -2.0f, 2.0f), 1.0f, Vector3f(1.0f, 1.0f, 1.0f)));
-    this->lights.push_back(Light(Vector3f(0.0f, 3.0f, 0.0f), 1.0f, Vector3f(1.0f, 0.1f, 0.1f)));
+    this->lights.push_back(Light(Vector3f(2.0f, -2.2f, 2.0f), 0.8f, Vector3f(1.0f, 1.0f, 1.0f)));
+    this->lights.push_back(Light(Vector3f(0.0f, 3.0f, 0.0f), 0.8f, Vector3f(1.0f, 0.1f, 0.1f)));
+    this->lights.push_back(Light(Vector3f(-2.0f, 0.0f, 2.0f), 0.8f, Vector3f(1.0f, 1.0f, 1.0f)));
 }
 
 RayTracer::RayTracer(unsigned int width,
@@ -74,10 +79,11 @@ Primitive& RayTracer::detectNearestObject(const Ray& ray) {
     return objects[nearest_object_id];
 }
 
-Vector3f RayTracer::castRay(const Ray& ray) {
-    if (objects.empty()) {
-        return background_color;
-    }
+Vector3f reflect(const Vector3f& from_source, const Vector3f& normal) {
+    return (normal * 2.0f * (from_source * normal) - from_source).normalize();
+}
+
+Vector3f RayTracer::castRay(const Ray& ray, size_t depth = 0) {
 
     float distance;
     const Primitive& nearest_object = detectNearestObject(ray);
@@ -85,7 +91,7 @@ Vector3f RayTracer::castRay(const Ray& ray) {
         return background_color;
     }
 
-    Vector3f point = ray.start + ray.direction * distance;
+    Vector3f point = ray.start + ray.direction * (distance - EPS);
     Vector3f normal = nearest_object.figure->getNormal(ray.start, ray.direction, distance);
     Vector3f view_dir = -ray.direction;
 
@@ -95,23 +101,55 @@ Vector3f RayTracer::castRay(const Ray& ray) {
     Vector3f specular(0.0f, 0.0f, 0.0f);
 
     for (size_t i = 0; i < lights.size(); ++i) {
+
+        Vector3f light_segment = point - lights[i].position;
         Vector3f light_dir = (lights[i].position - point).normalize();
+
+        float distance = sqrtf(light_segment * light_segment);
+        float intersect_dist = std::numeric_limits<float>::max();
+
+        bool in_shadow = false;
+
+        for (size_t j = 0; j < objects.size(); j++) {
+            objects[j].figure->processRayIntersect(lights[i].position, -light_dir, intersect_dist);
+
+            if (intersect_dist < distance) {
+                in_shadow = true;
+                break;
+            }
+        }
+
+        if (in_shadow) continue;
+
 
         float diff_intensity = std::max(0.0f, light_dir * normal);
         
-        Vector3f reflect_dir = (normal * 2.0f * (normal * light_dir) - light_dir).normalize();
+        Vector3f reflect_dir = reflect(light_dir, normal);
         float spec_intensity = std::pow(std::max(0.0f, reflect_dir * view_dir), nearest_object.material.specular_power);
 
         diffuse += lights[i].color * lights[i].intensity * diff_intensity;
         specular += lights[i].color * lights[i].intensity * spec_intensity;
     }
 
-    Vector3f result_color =
-        ambient +
-        compMult(nearest_object.material.color, diffuse) * nearest_object.material.k_diffuse +
-        specular * nearest_object.material.k_specular;
+    Vector3f result_ambient = ambient;
+    Vector3f result_diffuse = compMult(nearest_object.material.color, diffuse) * nearest_object.material.k_diffuse;
+    Vector3f result_specular = specular * nearest_object.material.k_specular;
 
-    return result_color;
+
+    if (nearest_object.material.reflector && depth < REFLECTION_DEPTH) {
+        Vector3f reflect_dir = reflect(-ray.direction, normal);
+
+        Vector3f reflect_color = castRay(Ray(point, reflect_dir), depth + 1);
+
+        Vector3f result_color;
+        result_color += (result_ambient + result_diffuse) * (1 - nearest_object.material.k_reflective);
+        result_color += result_specular;
+        result_color += reflect_color * nearest_object.material.k_reflective;
+        
+        return result_color;
+    }
+
+    return result_ambient + result_diffuse + result_specular;
 }
 
 

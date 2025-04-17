@@ -5,6 +5,11 @@
 #include <vector>
 #include <cassert>
 
+// ==================== Constants ====================
+
+constexpr float PI = 3.14159265f;
+constexpr float EPS = 0.001f;
+
 // ==================== Vectors ====================
 
 template <size_t dimension, typename T>
@@ -253,8 +258,6 @@ T clamp(T f1, T f2, T f3) {
     }
     return f1;
 }
-
-constexpr float PI = 3.14159265f;
 
 inline float degreesToRadians(float degrees) {
     return degrees * PI / 180.0f;
