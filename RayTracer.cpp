@@ -16,7 +16,7 @@
 
 void RayTracer::initObjects() {
     
-    Material red_surface(Vector3f(0.67f, 0.1f, 0.14f), 1.0f, 200.0f, 1.5f, true, 0.1f);
+    Material red_surface(Vector3f(0.8f, 0.0f, 0.0f), 1.0f, 200.0f, 1.5f, true, 0.1f);
     Material green_surface(Vector3f(0.2f, 0.7f, 0.3f), 1.0f, 5.0f, 0.1f, false, 0.0f);
     Material blue_surface(Vector3f(0.1f, 0.1f, 0.8f), 1.0f, 60.0f, 0.2f, false, 0.0f);
     Material reflector_surface(Vector3f(0.0f, 0.0f, 0.0f), 0.0f, 500.0f, 5.0f, true, 0.85f);
@@ -79,8 +79,8 @@ Primitive& RayTracer::detectNearestObject(const Ray& ray) {
     return objects[nearest_object_id];
 }
 
-Vector3f reflect(const Vector3f& from_source, const Vector3f& normal) {
-    return (normal * 2.0f * (from_source * normal) - from_source).normalize();
+Vector3f reflect(const Vector3f& to_source, const Vector3f& normal) {
+    return (normal * 2.0f * (to_source * normal) - to_source).normalize();
 }
 
 Vector3f RayTracer::castRay(const Ray& ray, size_t depth = 0) {
@@ -103,7 +103,7 @@ Vector3f RayTracer::castRay(const Ray& ray, size_t depth = 0) {
     for (size_t i = 0; i < lights.size(); ++i) {
 
         Vector3f light_segment = point - lights[i].position;
-        Vector3f light_dir = (lights[i].position - point).normalize();
+        Vector3f to_light_dir = (lights[i].position - point).normalize();
 
         float distance = sqrtf(light_segment * light_segment);
         float intersect_dist = std::numeric_limits<float>::max();
@@ -111,7 +111,7 @@ Vector3f RayTracer::castRay(const Ray& ray, size_t depth = 0) {
         bool in_shadow = false;
 
         for (size_t j = 0; j < objects.size(); j++) {
-            objects[j].figure->processRayIntersect(lights[i].position, -light_dir, intersect_dist);
+            objects[j].figure->processRayIntersect(lights[i].position, -to_light_dir, intersect_dist);
 
             if (intersect_dist < distance) {
                 in_shadow = true;
@@ -122,9 +122,9 @@ Vector3f RayTracer::castRay(const Ray& ray, size_t depth = 0) {
         if (in_shadow) continue;
 
 
-        float diff_intensity = std::max(0.0f, light_dir * normal);
+        float diff_intensity = std::max(0.0f, to_light_dir * normal);
         
-        Vector3f reflect_dir = reflect(light_dir, normal);
+        Vector3f reflect_dir = reflect(to_light_dir, normal);
         float spec_intensity = std::pow(std::max(0.0f, reflect_dir * view_dir), nearest_object.material.specular_power);
 
         diffuse += lights[i].color * lights[i].intensity * diff_intensity;
