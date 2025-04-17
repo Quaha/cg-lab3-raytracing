@@ -12,9 +12,4 @@ public:
                           std::vector<Vector3f> frame_buffer,
                           unsigned int width,
                           unsigned int height);
-
-    static void saveAsPNG(const std::string& name,
-                          std::vector<Vector4f> frame_buffer,
-                          unsigned int width,
-                          unsigned int height);
 };

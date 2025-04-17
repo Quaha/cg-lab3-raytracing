@@ -1,9 +1,9 @@
-﻿#include "RayTracer.hpp"
+﻿#include "SceneManager.hpp"
 
 int main() {
 
-    RayTracer ray_tracer(1920, 1080);
-    ray_tracer.render();
+    SceneManager scene(1920, 1080);
+    scene.render();
 
     return 0;
 }

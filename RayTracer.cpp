@@ -1,70 +1,20 @@
-#include <iostream>
 #include <cmath>
 #include <vector>
 #include <algorithm>
-#include <format>
 #include <limits>
 
 #include "RayTracer.hpp"
 
 #include "geometry.hpp"
-#include "Camera.hpp"
 #include "Material.hpp"
 #include "Primitive.hpp"
-#include "PNGsaver.hpp"
 #include "Light.hpp"
 
-void RayTracer::initObjects() {
-    
-    Material red_surface(Vector3f(0.8f, 0.0f, 0.0f), 1.0f, 200.0f, 1.5f, true, 0.1f);
-    Material green_surface(Vector3f(0.2f, 0.7f, 0.3f), 1.0f, 5.0f, 0.1f, false, 0.0f);
-    Material blue_surface(Vector3f(0.1f, 0.1f, 0.8f), 1.0f, 60.0f, 0.2f, false, 0.0f);
-    Material reflector_surface(Vector3f(0.0f, 0.0f, 0.0f), 0.0f, 500.0f, 5.0f, true, 0.85f);
-
-    this->objects.push_back(Primitive(Vector3f(-0.5f, 0.2f, 0.3f), 0.33f, red_surface));
-    this->objects.push_back(Primitive(Vector3f(0.3f, 0.2f, 0.0f), 0.25f, blue_surface));
-    this->objects.push_back(Primitive(Vector3f(0.0f, 0.0f, -0.5f), 0.5f, green_surface));
-
-    this->objects.push_back(Primitive(Vector3f(1.2f, -0.1f, -0.36f), 0.4f, reflector_surface));
-    this->objects.push_back(Primitive(Vector3f(-1.3f, -0.3f, 0.27f), 0.34f, reflector_surface));
-}
-
-void RayTracer::initCameras() {
-
-    Camera camera1(Vector3f(0.0f, 0.0f, 2.0f),
-                   Vector3f(0.0f, 0.0f, 0.0f),
-                   degreesToRadians(60.0f));
-
-    this->cameras.push_back(camera1);
-
-    Camera camera2(Vector3f(-1.0f, -3.0f, -1.0f),
-                   Vector3f(0.0f, 0.0f, 0.0f),
-                   degreesToRadians(60.0f));
-
-    this->cameras.push_back(camera2);
-
-    Camera camera3(Vector3f(-1.0f, 3.0f, -2.0f),
-        Vector3f(0.0f, 0.0f, 0.0f),
-        degreesToRadians(60.0f));
-
-    this->cameras.push_back(camera3);
-}
-
-void RayTracer::initLights() {
-    this->lights.push_back(Light(Vector3f(2.0f, -2.2f, 2.0f), 0.8f, Vector3f(1.0f, 1.0f, 1.0f)));
-    this->lights.push_back(Light(Vector3f(0.0f, 3.0f, 0.0f), 0.8f, Vector3f(1.0f, 0.1f, 0.1f)));
-    this->lights.push_back(Light(Vector3f(-2.0f, 0.0f, 2.0f), 0.8f, Vector3f(1.0f, 1.0f, 1.0f)));
-}
-
-RayTracer::RayTracer(unsigned int width,
-                     unsigned int height): width(width), height(height) {
-
-    initCameras();
-    initLights();
-    initObjects();
-}
-
-Primitive& RayTracer::detectNearestObject(const Ray& ray) {
+const Primitive& RayTracer::detectNearestObject(
+    const Ray& ray,
+    const std::vector<Primitive>& objects,
+    const std::vector<Light>& lights) 
+{
     float lowest_dist = std::numeric_limits<float>::max();
     size_t nearest_object_id = 0;
     for (size_t i = 0; i < objects.size(); ++i) {
@@ -79,14 +29,18 @@ Primitive& RayTracer::detectNearestObject(const Ray& ray) {
     return objects[nearest_object_id];
 }
 
-Vector3f reflect(const Vector3f& to_source, const Vector3f& normal) {
+Vector3f RayTracer::reflect(const Vector3f& to_source, const Vector3f& normal) {
     return (normal * 2.0f * (to_source * normal) - to_source).normalize();
 }
 
-Vector3f RayTracer::castRay(const Ray& ray, size_t depth = 0) {
-
+Vector3f RayTracer::castRay(
+    const Ray& ray,
+    const std::vector<Primitive>& objects,
+    const std::vector<Light>& lights,
+    size_t depth)
+{
     float distance;
-    const Primitive& nearest_object = detectNearestObject(ray);
+    const Primitive& nearest_object = detectNearestObject(ray, objects, lights);
     if (!nearest_object.figure->processRayIntersect(ray.start, ray.direction, distance)) {
         return background_color;
     }
@@ -135,11 +89,10 @@ Vector3f RayTracer::castRay(const Ray& ray, size_t depth = 0) {
     Vector3f result_diffuse = compMult(nearest_object.material.color, diffuse) * nearest_object.material.k_diffuse;
     Vector3f result_specular = specular * nearest_object.material.k_specular;
 
-
     if (nearest_object.material.reflector && depth < REFLECTION_DEPTH) {
         Vector3f reflect_dir = reflect(-ray.direction, normal);
 
-        Vector3f reflect_color = castRay(Ray(point, reflect_dir), depth + 1);
+        Vector3f reflect_color = castRay(Ray(point, reflect_dir), objects, lights, depth + 1);
 
         Vector3f result_color;
         result_color += (result_ambient + result_diffuse) * (1 - nearest_object.material.k_reflective);
@@ -150,39 +103,4 @@ Vector3f RayTracer::castRay(const Ray& ray, size_t depth = 0) {
     }
 
     return result_ambient + result_diffuse + result_specular;
-}
-
-
-void RayTracer::render() {
-
-    std::vector<Vector3f> frame_buffer(width * height);
-
-    for (size_t k = 0; k < cameras.size(); ++k) {
-        const Camera& camera = cameras[k];
-        for (size_t i = 0; i < height; ++i) {
-            for (size_t j = 0; j < width; ++j) {
-
-                /*
-                * 1. xp = (j + 0.5) / width: j in [0, width] -> [0, 1]
-                * 2. (2 * xp - 1): xp in [0, 1] -> xp in [-1, 1]
-                * 3. xp *  tan(camera.getFOV() / 2): Conversion depending on FOV
-                * 4. width / heigh: Correction due to differences in the sides
-                */
-
-                float scale = tan(camera.getFOV() / 2.0f);
-                float screen_aspect_ratio = width / (float)height;
-
-                float x = (2 * (j + 0.5f) / (float)width - 1) * scale * screen_aspect_ratio;
-                float y = (2 * (i + 0.5f) / (float)height - 1) * scale;
-
-                Vector3f direction = (camera.getRight() * x +
-                                      camera.getUp() * y +
-                                      camera.getForward()).normalize();
-
-                Ray ray(camera.getPosition(), direction);
-                frame_buffer[j + i * width] = castRay(ray);
-            }
-        }
-        PNGsaver::saveAsPNG(std::format("photo{}.png", k), frame_buffer, width, height);
-    }
 }
