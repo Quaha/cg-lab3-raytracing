@@ -12,14 +12,15 @@
 #include "Material.hpp"
 #include "Primitive.hpp"
 #include "PNGsaver.hpp"
+#include "Light.hpp"
 
 void RayTracer::initObjects() {
     
-    Material red_surface(Vector3f(0.67f, 0.1f, 0.14f));
-    Material green_surface(Vector3f(0.2f, 0.7f, 0.3f));
-    Material blue_surface(Vector3f(0.1f, 0.1f, 0.8f));
+    Material red_surface(Vector3f(0.67f, 0.1f, 0.14f), 1.0f, 125.0f, 0.2f);
+    Material green_surface(Vector3f(0.2f, 0.7f, 0.3f), 1.0f, 5.0f, 0.2f);
+    Material blue_surface(Vector3f(0.1f, 0.1f, 0.8f), 1.0f, 60.0f, 0.15f);
 
-    this->objects.push_back(Primitive(Vector3f(-0.3f, 0.2f, 0.0f), 0.33f, red_surface));
+    this->objects.push_back(Primitive(Vector3f(-0.5f, 0.2f, 0.0f), 0.33f, red_surface));
     this->objects.push_back(Primitive(Vector3f(0.3f, 0.2f, 0.0f), 0.25f, blue_surface));
     this->objects.push_back(Primitive(Vector3f(0.0f, 0.0f, -0.5f), 0.5f, green_surface));
 }
@@ -45,12 +46,16 @@ void RayTracer::initCameras() {
     this->cameras.push_back(camera3);
 }
 
+void RayTracer::initLights() {
+    this->lights.push_back(Light(Vector3f(2.0f, -2.0f, 2.0f), 1.0f, Vector3f(1.0f, 1.0f, 1.0f)));
+    this->lights.push_back(Light(Vector3f(0.0f, 3.0f, 0.0f), 1.0f, Vector3f(1.0f, 0.1f, 0.1f)));
+}
+
 RayTracer::RayTracer(unsigned int width,
                      unsigned int height): width(width), height(height) {
-    
-    this->background_color = Vector3f(0.2f, 0.7f, 0.8f);
 
     initCameras();
+    initLights();
     initObjects();
 }
 
@@ -73,12 +78,40 @@ Vector3f RayTracer::castRay(const Ray& ray) {
     if (objects.empty()) {
         return background_color;
     }
-    float temp;
+
+    float distance;
     const Primitive& nearest_object = detectNearestObject(ray);
-    if (!nearest_object.figure->processRayIntersect(ray.start, ray.direction, temp)) {
+    if (!nearest_object.figure->processRayIntersect(ray.start, ray.direction, distance)) {
         return background_color;
     }
-    return nearest_object.material.color;
+
+    Vector3f point = ray.start + ray.direction * distance;
+    Vector3f normal = nearest_object.figure->getNormal(ray.start, ray.direction, distance);
+    Vector3f view_dir = -ray.direction;
+
+    Vector3f ambient = compMult(nearest_object.material.color, ambient_light);
+
+    Vector3f diffuse(0.0f, 0.0f, 0.0f);
+    Vector3f specular(0.0f, 0.0f, 0.0f);
+
+    for (size_t i = 0; i < lights.size(); ++i) {
+        Vector3f light_dir = (lights[i].position - point).normalize();
+
+        float diff_intensity = std::max(0.0f, light_dir * normal);
+        
+        Vector3f reflect_dir = (normal * 2.0f * (normal * light_dir) - light_dir).normalize();
+        float spec_intensity = std::pow(std::max(0.0f, reflect_dir * view_dir), nearest_object.material.specular_power);
+
+        diffuse += lights[i].color * lights[i].intensity * diff_intensity;
+        specular += lights[i].color * lights[i].intensity * spec_intensity;
+    }
+
+    Vector3f result_color =
+        ambient +
+        compMult(nearest_object.material.color, diffuse) * nearest_object.material.k_diffuse +
+        specular * nearest_object.material.k_specular;
+
+    return result_color;
 }
 
 

@@ -189,6 +189,14 @@ Vector<dimension, T> operator+(const Vector<dimension, T>& v1, const Vector<dime
 }
 
 template<size_t dimension, typename T>
+Vector<dimension, T>& operator+=(Vector<dimension, T>& v1, const Vector<dimension, T>& v2) {
+    for (size_t i = 0; i != dimension; ++i) {
+        v1[i] += v2[i];
+    }
+    return v1;
+}
+
+template<size_t dimension, typename T>
 Vector<dimension, T> operator-(const Vector<dimension, T>& v1, const Vector<dimension, T>& v2) {
     Vector<dimension, T> result;
     for (size_t i = 0; i != dimension; ++i) {
@@ -202,6 +210,15 @@ Vector<dimension, T> operator*(const Vector<dimension, T>& v, const U& c) {
     Vector<dimension, T> result;
     for (size_t i = 0; i != dimension; ++i) {
         result[i] = v[i] * c;
+    }
+    return result;
+}
+
+template<size_t dimension, typename T>
+Vector<dimension, T> compMult(const Vector<dimension, T>& v1, const Vector<dimension, T>& v2) {
+    Vector<dimension, T> result;
+    for (size_t i = 0; i != dimension; ++i) {
+        result[i] = v1[i] * v2[i];
     }
     return result;
 }
@@ -270,6 +287,8 @@ struct Figure {
         return processRayIntersect(ray.start, ray.direction, intersect_dist);
     }
 
+    virtual Vector3f getNormal(const Vector3f& start, const Vector3f& direction, float intersect_dist) const = 0;
+
     virtual ~Figure() = default;
 
 };
@@ -323,5 +342,12 @@ struct Sphere : Figure {
         else {
             return false;
         }
+    }
+
+    Vector3f getNormal(const Vector3f& start,
+                       const Vector3f& direction,
+                       float intersect_dist) const override {
+        Vector3f point = start + direction * intersect_dist;
+        return (point - this->center).normalize();
     }
 };

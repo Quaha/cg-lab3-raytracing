@@ -2,7 +2,7 @@
 
 int main() {
 
-    RayTracer ray_tracer(1280, 720);
+    RayTracer ray_tracer(1920, 1080);
     ray_tracer.render();
 
     return 0;
