@@ -10,18 +10,14 @@
 #include "PNGsaver.hpp"
 #include "RayTracer.hpp"
 
-SceneManager::SceneManager(unsigned int width, unsigned int height) : width(width), height(height) {
-    initCameras();
-    initLights();
-    initObjects();
-}
+SceneManager::SceneManager(unsigned int width, unsigned int height) : width(width), height(height) {}
 
-void SceneManager::initObjects() {
+void initObjects1(std::vector<Primitive>& objects) {
 
-    Material red_surface(Vector3f(0.8f, 0.0f, 0.0f), 1.0f, 200.0f, 1.5f, true, 0.1f);
-    Material green_surface(Vector3f(0.2f, 0.7f, 0.3f), 1.0f, 5.0f, 0.1f, false, 0.0f);
-    Material blue_surface(Vector3f(0.1f, 0.1f, 0.8f), 1.0f, 60.0f, 0.2f, false, 0.0f);
-    Material reflector_surface(Vector3f(0.0f, 0.0f, 0.0f), 0.0f, 500.0f, 5.0f, true, 0.85f);
+    Material red_surface(Vector3f(0.8f, 0.0f, 0.0f), 1.0f, 200.0f, 1.5f, true, 0.1f, false, 0.0f, 0.0f);
+    Material green_surface(Vector3f(0.2f, 0.7f, 0.3f), 1.0f, 5.0f, 0.1f, false, 0.0f, false, 0.0f, 0.0f);
+    Material blue_surface(Vector3f(0.1f, 0.1f, 0.8f), 1.0f, 60.0f, 0.2f, false, 0.0f, false, 0.0f, 0.0f);
+    Material reflector_surface(Vector3f(0.0f, 0.0f, 0.0f), 0.0f, 500.0f, 5.0f, true, 0.85f, false, 0.0f, 0.0f);
 
     objects.push_back(Primitive(Vector3f(-0.5f, 0.2f, 0.3f), 0.33f, red_surface));
     objects.push_back(Primitive(Vector3f(0.3f, 0.2f, 0.0f), 0.25f, blue_surface));
@@ -31,7 +27,7 @@ void SceneManager::initObjects() {
     objects.push_back(Primitive(Vector3f(-1.3f, -0.3f, 0.27f), 0.34f, reflector_surface));
 }
 
-void SceneManager::initCameras() {
+void initCameras1(std::vector<Camera>& cameras) {
 
     Camera camera1(Vector3f(0.0f, 0.0f, 2.0f),
         Vector3f(0.0f, 0.0f, 0.0f),
@@ -52,10 +48,34 @@ void SceneManager::initCameras() {
     cameras.push_back(camera3);
 }
 
-void SceneManager::initLights() {
+void initLights1(std::vector<Light>& lights) {
     lights.push_back(Light(Vector3f(2.0f, -2.2f, 2.0f), 0.8f, Vector3f(1.0f, 1.0f, 1.0f)));
     lights.push_back(Light(Vector3f(0.0f, 3.0f, 0.0f), 0.8f, Vector3f(1.0f, 0.1f, 0.1f)));
     lights.push_back(Light(Vector3f(-2.0f, 0.0f, 2.0f), 0.8f, Vector3f(1.0f, 1.0f, 1.0f)));
+}
+
+void SceneManager::loadScene(size_t scene_id, const std::string& scene_name) {
+    switch (scene_id) {
+    case 0:
+        initObjects1(objects);
+        initCameras1(cameras);
+        initLights1(lights);
+
+        this->scene_name = scene_name;
+        break;
+
+    default:
+        assert(false);
+        break;
+    }
+}
+
+void SceneManager::clearScene() {
+    objects.clear();
+    cameras.clear();
+    lights.clear();
+
+    scene_name = "";
 }
 
 void SceneManager::render() {
@@ -88,6 +108,6 @@ void SceneManager::render() {
                 frame_buffer[j + i * width] = RayTracer::castRay(ray, objects, lights);
             }
         }
-        PNGsaver::saveAsPNG(std::format("photo{}.png", k), frame_buffer, width, height);
+        PNGsaver::saveAsPNG(std::format("{}{}.png", scene_name, k), frame_buffer, width, height);
     }
 }

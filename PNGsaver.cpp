@@ -7,21 +7,21 @@
 
 #include "geometry.hpp"
 
-void PNGsaver::saveAsPNG(const std::string& name,
-                         std::vector<Vector3f> frame_buffer,
-                         unsigned int width,
-                         unsigned int height)
+void PNGsaver::saveAsPNG(
+    const std::string& name,
+    std::vector<Vector3f> frame_buffer,
+    unsigned int width,
+    unsigned int height)
 {
-    // Массив RGBA (lodepng требует 4 канала)
+    // vestor of RGBA (lodepng requires 4 channels)
     std::vector<unsigned char> image(width * height * 4);
     for (unsigned i = 0; i < width * height; ++i) {
         image[4 * i + 0] = static_cast<unsigned char>(255 * clamp(frame_buffer[i][0], 0.0f, 1.0f)); // R
         image[4 * i + 1] = static_cast<unsigned char>(255 * clamp(frame_buffer[i][1], 0.0f, 1.0f)); // G
         image[4 * i + 2] = static_cast<unsigned char>(255 * clamp(frame_buffer[i][2], 0.0f, 1.0f)); // B
-        image[4 * i + 3] = 255; // A (прозрачность — полностью непрозрачный)
+        image[4 * i + 3] = 255; // A
     }
 
-    // Сохранение в PNG
     unsigned error = lodepng::encode(name, image, width, height);
 
     if (error) {

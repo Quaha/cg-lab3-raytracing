@@ -17,7 +17,7 @@ struct RayTracer {
 												const std::vector<Primitive>& objects,
 												const std::vector<Light>& lights);
 
-	static Vector3f reflect(const Vector3f& to_source, const Vector3f& normal);
+	static Vector3f getReflectDirection(const Vector3f& to_source, const Vector3f& normal);
 
 	static Vector3f castRay(const Ray& ray,
 							const std::vector<Primitive>& objects,

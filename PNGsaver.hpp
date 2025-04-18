@@ -7,7 +7,6 @@
 
 class PNGsaver {
 public:
-
     static void saveAsPNG(const std::string& name,
                           std::vector<Vector3f> frame_buffer,
                           unsigned int width,

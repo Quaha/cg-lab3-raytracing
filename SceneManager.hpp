@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <string>
 
 #include "Primitive.hpp"
 #include "Camera.hpp"
@@ -8,7 +9,6 @@
 
 class SceneManager {
 private:
-
 	const unsigned int width;
 	const unsigned int height;
 
@@ -16,13 +16,13 @@ private:
 	std::vector<Camera> cameras;
 	std::vector<Light> lights;
 
-	void initObjects();
-	void initCameras();
-	void initLights();
+	std::string scene_name;
 
 public:
-
 	SceneManager(unsigned int width, unsigned int height);
+
+	void loadScene(size_t scene_id, const std::string& scene_name);
+	void clearScene();
 
 	void render();
 

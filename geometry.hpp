@@ -118,7 +118,7 @@ struct Vector<3, T> {
         return std::sqrt(x * x + y * y + z * z);
     }
 
-    // Приводит длину вектора к заданной
+    // Brings the length of the vector to the needed length
     Vector<3, T>& normalize(T len = T(1)) {
         const T scale = len / getNorm();
 

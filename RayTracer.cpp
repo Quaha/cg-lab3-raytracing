@@ -29,7 +29,7 @@ const Primitive& RayTracer::detectNearestObject(
     return objects[nearest_object_id];
 }
 
-Vector3f RayTracer::reflect(const Vector3f& to_source, const Vector3f& normal) {
+Vector3f RayTracer::getReflectDirection(const Vector3f& to_source, const Vector3f& normal) {
     return (normal * 2.0f * (to_source * normal) - to_source).normalize();
 }
 
@@ -78,7 +78,7 @@ Vector3f RayTracer::castRay(
 
         float diff_intensity = std::max(0.0f, to_light_dir * normal);
         
-        Vector3f reflect_dir = reflect(to_light_dir, normal);
+        Vector3f reflect_dir = getReflectDirection(to_light_dir, normal);
         float spec_intensity = std::pow(std::max(0.0f, reflect_dir * view_dir), nearest_object.material.specular_power);
 
         diffuse += lights[i].color * lights[i].intensity * diff_intensity;
@@ -90,7 +90,7 @@ Vector3f RayTracer::castRay(
     Vector3f result_specular = specular * nearest_object.material.k_specular;
 
     if (nearest_object.material.reflector && depth < REFLECTION_DEPTH) {
-        Vector3f reflect_dir = reflect(-ray.direction, normal);
+        Vector3f reflect_dir = getReflectDirection(-ray.direction, normal);
 
         Vector3f reflect_color = castRay(Ray(point, reflect_dir), objects, lights, depth + 1);
 
