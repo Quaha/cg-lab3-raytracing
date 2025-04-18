@@ -14,7 +14,7 @@ file(GLOB CORE_SOURCES "${CMAKE_SOURCE_DIR}/core/src/*.cpp")
 file(GLOB CORE_HEADERS "${CMAKE_SOURCE_DIR}/core/include/*.hpp")
 
 file(GLOB LODEPNG_SOURCES "${CMAKE_SOURCE_DIR}/external/lodepng/*.cpp")
-file(GLOB LODEPNG_HEADERS "${CMAKE_SOURCE_DIR}/external/lodepng/*.hpp")
+file(GLOB LODEPNG_HEADERS "${CMAKE_SOURCE_DIR}/external/lodepng/*.h")
 
 add_library(core ${CORE_SOURCES} ${CORE_HEADERS})
 add_library(lodepng ${LODEPNG_SOURCES} ${LODEPNG_HEADERS})
