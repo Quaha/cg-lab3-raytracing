@@ -37,7 +37,8 @@ Vector3f RayTracer::castRay(
     const Ray& ray,
     const std::vector<Primitive>& objects,
     const std::vector<Light>& lights,
-    size_t depth)
+    size_t depth,
+    float k_refraction)
 {
     float distance;
     const Primitive& nearest_object = detectNearestObject(ray, objects, lights);
@@ -45,19 +46,18 @@ Vector3f RayTracer::castRay(
         return background_color;
     }
 
-    Vector3f point = ray.start + ray.direction * (distance - EPS);
+    Vector3f point_in = ray.start + ray.direction * (distance + EPS);
+    Vector3f point_out = ray.start + ray.direction * (distance - EPS);
     Vector3f normal = nearest_object.figure->getNormal(ray.start, ray.direction, distance);
-    Vector3f view_dir = -ray.direction;
-
-    Vector3f ambient = compMult(nearest_object.material.color, ambient_light);
+    Vector3f view_dir = -ray.direction; // to ray source
 
     Vector3f diffuse(0.0f, 0.0f, 0.0f);
     Vector3f specular(0.0f, 0.0f, 0.0f);
 
     for (size_t i = 0; i < lights.size(); ++i) {
 
-        Vector3f light_segment = point - lights[i].position;
-        Vector3f to_light_dir = (lights[i].position - point).normalize();
+        Vector3f light_segment = point_out - lights[i].position;
+        Vector3f to_light_dir = (lights[i].position - point_out).normalize();
 
         float distance = sqrtf(light_segment * light_segment);
         float intersect_dist = std::numeric_limits<float>::max();
@@ -85,22 +85,44 @@ Vector3f RayTracer::castRay(
         specular += lights[i].color * lights[i].intensity * spec_intensity;
     }
 
-    Vector3f result_ambient = ambient;
+    Vector3f result_ambient = compMult(nearest_object.material.color, ambient_light);
     Vector3f result_diffuse = compMult(nearest_object.material.color, diffuse) * nearest_object.material.k_diffuse;
     Vector3f result_specular = specular * nearest_object.material.k_specular;
 
+    Vector3f result_reflect(0.0f, 0.0f, 0.0f);
     if (nearest_object.material.reflector && depth < REFLECTION_DEPTH) {
         Vector3f reflect_dir = getReflectDirection(-ray.direction, normal);
 
-        Vector3f reflect_color = castRay(Ray(point, reflect_dir), objects, lights, depth + 1);
-
-        Vector3f result_color;
-        result_color += (result_ambient + result_diffuse) * (1 - nearest_object.material.k_reflective);
-        result_color += result_specular;
-        result_color += reflect_color * nearest_object.material.k_reflective;
-        
-        return result_color;
+        result_reflect = castRay(Ray(point_out, reflect_dir), objects, lights, depth + 1, k_refraction);
     }
 
-    return result_ambient + result_diffuse + result_specular;
+    Vector3f result_transpar(0.0f, 0.0f, 0.0f);
+    if (nearest_object.material.transparent && depth < REFLECTION_DEPTH) {
+
+        float out_k = k_refraction;
+        float in_k = nearest_object.material.k_refraction;
+
+        Vector3f source_dir = ray.direction;
+
+        Vector3f transpar_dir;
+
+        float cosi = clamp(source_dir * normal, -1.0f, 1.0f);
+        float eta = out_k / in_k;  // Коэффициент перехода
+
+        float k = 1.0f - eta * eta * (1.0f - cosi * cosi);
+
+        if (k >= 0.0f) {
+            transpar_dir = (source_dir * eta + normal * (eta * cosi - sqrtf(k))).normalize();
+            result_transpar = castRay(Ray(point_in, transpar_dir), objects, lights, depth + 1, nearest_object.material.k_refraction);
+        }
+    }
+
+    Vector3f result_color =
+        (result_ambient + result_diffuse) *
+        (1.0f - nearest_object.material.k_reflective - nearest_object.material.k_transparency) +
+        result_specular +
+        result_reflect * nearest_object.material.k_reflective +
+        result_transpar * nearest_object.material.k_transparency;
+
+    return result_color;
 }

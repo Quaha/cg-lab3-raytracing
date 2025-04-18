@@ -19,12 +19,16 @@ void initObjects1(std::vector<Primitive>& objects) {
     Material blue_surface(Vector3f(0.1f, 0.1f, 0.8f), 1.0f, 60.0f, 0.2f, false, 0.0f, false, 0.0f, 0.0f);
     Material reflector_surface(Vector3f(0.0f, 0.0f, 0.0f), 0.0f, 500.0f, 5.0f, true, 0.85f, false, 0.0f, 0.0f);
 
+    Material glass_surface(Vector3f(0.0f, 0.0f, 0.0f), 0.0f, 500.0f, 5.0f, true, 0.25f, true, 0.70f, 1.5f);
+
     objects.push_back(Primitive(Vector3f(-0.5f, 0.2f, 0.3f), 0.33f, red_surface));
     objects.push_back(Primitive(Vector3f(0.3f, 0.2f, 0.0f), 0.25f, blue_surface));
     objects.push_back(Primitive(Vector3f(0.0f, 0.0f, -0.5f), 0.5f, green_surface));
 
     objects.push_back(Primitive(Vector3f(1.2f, -0.1f, -0.36f), 0.4f, reflector_surface));
     objects.push_back(Primitive(Vector3f(-1.3f, -0.3f, 0.27f), 0.34f, reflector_surface));
+
+    objects.push_back(Primitive(Vector3f(0.0f, 0.2f, 0.8f), 0.34f, glass_surface));
 }
 
 void initCameras1(std::vector<Camera>& cameras) {

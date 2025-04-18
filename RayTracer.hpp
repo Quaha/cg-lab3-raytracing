@@ -11,7 +11,9 @@ struct RayTracer {
 	inline static Vector3f ambient_light = Vector3f(0.1f, 0.1f, 0.1f);
 	inline static Vector3f background_color = Vector3f(0.2f, 0.7f, 0.8f);
 
-	inline static size_t REFLECTION_DEPTH = 10;
+	const inline static size_t REFLECTION_DEPTH = 10;
+
+	const inline static float k_refraction = 1.0f;
 
 	static const Primitive& detectNearestObject(const Ray& ray,
 												const std::vector<Primitive>& objects,
@@ -22,5 +24,6 @@ struct RayTracer {
 	static Vector3f castRay(const Ray& ray,
 							const std::vector<Primitive>& objects,
 							const std::vector<Light>& lights,
-							size_t depth = 0);
+							size_t depth = 0,
+							float k_refraction = RayTracer::k_refraction);
 };

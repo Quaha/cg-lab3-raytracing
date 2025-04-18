@@ -351,6 +351,10 @@ struct Sphere : Figure {
                        const Vector3f& direction,
                        float intersect_dist) const override {
         Vector3f point = start + direction * intersect_dist;
+
+        if (start * start <= radius * radius) {
+            return -(point - this->center).normalize();
+        }
         return (point - this->center).normalize();
     }
 };
