@@ -22,7 +22,7 @@ void PNGsaver::saveAsPNG(
         image[4 * i + 3] = 255; // A
     }
 
-    unsigned error = lodepng::encode(name, image, width, height);
+    unsigned error = lodepng::encode("pictures/" + name, image, width, height);
 
     if (error) {
         std::cout << "An error occurred while saving to png " << name << ": " << lodepng_error_text(error) << std::endl;

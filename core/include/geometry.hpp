@@ -62,6 +62,8 @@ struct Vector<2, T> {
             return y;
         }
         assert(false);
+
+        return x; // anti-warning
     }
 
     const T& operator[](const size_t i) const {
@@ -72,6 +74,8 @@ struct Vector<2, T> {
             return y;
         }
         assert(false);
+
+        return x; // anti-warning
     }
 };
 
@@ -100,6 +104,8 @@ struct Vector<3, T> {
             return z;
         }
         assert(false);
+
+        return x; // anti-warning
     }
 
     const T& operator[](const size_t i) const {
@@ -112,6 +118,8 @@ struct Vector<3, T> {
             return z;
         }
         assert(false);
+
+        return x; // anti-warning
     }
 
     float getNorm() {

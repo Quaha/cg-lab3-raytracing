@@ -3,7 +3,7 @@
 #include <memory>
 
 #include "geometry.hpp"
-#include "Material.hpp";
+#include "Material.hpp"
 
 struct Primitive {
 
