@@ -33,6 +33,15 @@ Vector3f RayTracer::getReflectDirection(const Vector3f& to_source, const Vector3
     return (normal * 2.0f * (to_source * normal) - to_source).normalize();
 }
 
+Vector3f RayTracer::getRefractDirection(const Vector3f& from_source, const Vector3f& normal, float out_k, float in_k) {
+    float cosi = clamp(from_source * normal, -1.0f, 1.0f);
+    float eta = out_k / in_k;
+
+    float k = 1.0f - eta * eta * (1.0f - cosi * cosi);
+
+    return (from_source * eta + normal * (eta * cosi - sqrtf(k))).normalize();
+}
+
 Vector3f RayTracer::castRay(
     const Ray& ray,
     const std::vector<Primitive>& objects,
@@ -102,19 +111,8 @@ Vector3f RayTracer::castRay(
         float out_k = k_refraction;
         float in_k = nearest_object.material.k_refraction;
 
-        Vector3f source_dir = ray.direction;
-
-        Vector3f transpar_dir;
-
-        float cosi = clamp(source_dir * normal, -1.0f, 1.0f);
-        float eta = out_k / in_k;  // Коэффициент перехода
-
-        float k = 1.0f - eta * eta * (1.0f - cosi * cosi);
-
-        if (k >= 0.0f) {
-            transpar_dir = (source_dir * eta + normal * (eta * cosi - sqrtf(k))).normalize();
-            result_transpar = castRay(Ray(point_in, transpar_dir), objects, lights, depth + 1, nearest_object.material.k_refraction);
-        }
+        Vector3f transpar_dir = getRefractDirection(ray.direction, normal, out_k, in_k);
+        result_transpar = castRay(Ray(point_in, transpar_dir), objects, lights, depth + 1, nearest_object.material.k_refraction);
     }
 
     Vector3f result_color =

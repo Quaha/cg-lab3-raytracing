@@ -14,12 +14,12 @@ SceneManager::SceneManager(unsigned int width, unsigned int height) : width(widt
 
 void initObjects1(std::vector<Primitive>& objects) {
 
-    Material red_surface(Vector3f(0.8f, 0.0f, 0.0f), 1.0f, 200.0f, 1.5f, true, 0.1f, false, 0.0f, 0.0f);
+    Material red_surface(Vector3f(0.8f, 0.0f, 0.0f), 1.0f, 200.0f, 1.5f, true, 0.1f, true, 0.1f, 1.5f);
     Material green_surface(Vector3f(0.2f, 0.7f, 0.3f), 1.0f, 5.0f, 0.1f, false, 0.0f, false, 0.0f, 0.0f);
     Material blue_surface(Vector3f(0.1f, 0.1f, 0.8f), 1.0f, 60.0f, 0.2f, false, 0.0f, false, 0.0f, 0.0f);
     Material reflector_surface(Vector3f(0.0f, 0.0f, 0.0f), 0.0f, 500.0f, 5.0f, true, 0.85f, false, 0.0f, 0.0f);
 
-    Material glass_surface(Vector3f(0.0f, 0.0f, 0.0f), 0.0f, 500.0f, 5.0f, true, 0.25f, true, 0.70f, 1.5f);
+    Material glass_surface(Vector3f(0.0f, 0.0f, 0.0f), 0.0f, 50.0f, 0.3f, true, 0.07f, true, 0.85f, 1.5f);
 
     objects.push_back(Primitive(Vector3f(-0.5f, 0.2f, 0.3f), 0.33f, red_surface));
     objects.push_back(Primitive(Vector3f(0.3f, 0.2f, 0.0f), 0.25f, blue_surface));
@@ -28,7 +28,7 @@ void initObjects1(std::vector<Primitive>& objects) {
     objects.push_back(Primitive(Vector3f(1.2f, -0.1f, -0.36f), 0.4f, reflector_surface));
     objects.push_back(Primitive(Vector3f(-1.3f, -0.3f, 0.27f), 0.34f, reflector_surface));
 
-    objects.push_back(Primitive(Vector3f(0.0f, 0.2f, 0.8f), 0.34f, glass_surface));
+    objects.push_back(Primitive(Vector3f(0.0f, 0.2f, 0.4f), 0.2f, glass_surface));
 }
 
 void initCameras1(std::vector<Camera>& cameras) {

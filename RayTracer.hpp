@@ -20,6 +20,7 @@ struct RayTracer {
 												const std::vector<Light>& lights);
 
 	static Vector3f getReflectDirection(const Vector3f& to_source, const Vector3f& normal);
+	static Vector3f getRefractDirection(const Vector3f& from_source, const Vector3f& normal, float out_k, float in_k);
 
 	static Vector3f castRay(const Ray& ray,
 							const std::vector<Primitive>& objects,
