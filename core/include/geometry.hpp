@@ -246,14 +246,6 @@ Vector<3, T> cross(Vector<3, T> v1, Vector<3, T> v2) {
     return Vector<3, T>(v1.y * v2.z - v1.z * v2.y, v1.z * v2.x - v1.x * v2.z, v1.x * v2.y - v1.y * v2.x);
 }
 
-template <size_t dimension, typename T> 
-std::ostream& operator<<(std::ostream& out, const Vector<dimension, T>& v) {
-    for (size_t i = 0; i != dimension; ++i) {
-        out << v[i] << " ";
-    }
-    return out;
-}
-
 // ==================== Functions ====================
 
 template<typename T> 
@@ -265,6 +257,18 @@ T clamp(T f1, T f2, T f3) {
         return f3;
     }
     return f1;
+}
+
+template<typename T>
+T fastPow(T value, size_t power) {
+    if (power == 0) {
+        return static_cast<T>(1);
+    }
+    if (power % 2 == 0) {
+        T temp = fastPow(value, power / 2);
+        return temp * temp;
+    }
+    return value * fastPow(value, power - 1);
 }
 
 inline float degreesToRadians(float degrees) {
@@ -314,9 +318,11 @@ struct Sphere : Figure {
         center = Vector3f(x, y, z);
     }
 
-    bool processRayIntersect(const Vector3f& start, 
-                             const Vector3f& direction,
-                             float& intersect_dist) const override { 
+    bool processRayIntersect(
+        const Vector3f& start, 
+        const Vector3f& direction,
+        float& intersect_dist) const override 
+    { 
 
         /* These equations could be derived from this system:
         *   
@@ -355,14 +361,80 @@ struct Sphere : Figure {
         }
     }
 
-    Vector3f getNormal(const Vector3f& start,
-                       const Vector3f& direction,
-                       float intersect_dist) const override {
+    Vector3f getNormal(
+        const Vector3f& start,
+        const Vector3f& direction,
+        float intersect_dist) const override
+    {
         Vector3f point = start + direction * intersect_dist;
 
         if (start * start <= radius * radius) {
             return -(point - this->center).normalize();
         }
         return (point - this->center).normalize();
+    }
+};
+
+struct Triangle: Figure {
+
+    Vector3f A;
+    Vector3f B;
+    Vector3f C;
+
+    Triangle(const Vector3f& A, const Vector3f& B, const Vector3f& C) {
+        this->A = A;
+        this->B = B;
+        this->C = C;
+    }
+
+    bool processRayIntersect(
+        const Vector3f& start,
+        const Vector3f& direction,
+        float& intersect_dist) const override 
+    {
+        // Thomas Moller and Ben Trumbore algorithm
+
+        Vector3f e1 = B - A;
+        Vector3f e2 = C - A;
+        // Вычисление вектора нормали к плоскости
+        Vector3f pvec = cross(direction, e2);
+        float det = e1 * pvec;
+
+        // Луч параллелен плоскости
+        if (abs(det) < EPS) {
+            return false;
+        }
+
+        float inv_det = 1 / det;
+        Vector3f tvec = start - A;
+        float u = tvec * pvec * inv_det;
+        if (u < 0 || u > 1) {
+            return false;
+        }
+
+        Vector3f qvec = cross(tvec, e1);
+        float v = direction * qvec * inv_det;
+        if (v < 0.0f || u + v > 1.0f) {
+            return false;
+        }
+        intersect_dist = e2 * qvec * inv_det;
+        return true;
+    }
+
+    Vector3f getNormal(
+        const Vector3f& start,
+        const Vector3f& direction,
+        float intersect_dist) const override
+    {
+        Vector3f e1 = B - A;
+        Vector3f e2 = C - A;
+
+        Vector3f normal = cross(e1, e2).normalize();
+
+        if (normal * direction > 0) {
+            normal = -normal;
+        }
+
+        return normal;
     }
 };

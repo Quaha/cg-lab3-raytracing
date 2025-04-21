@@ -33,13 +33,13 @@ Vector3f RayTracer::getReflectDirection(const Vector3f& to_source, const Vector3
     return (normal * 2.0f * (to_source * normal) - to_source).normalize();
 }
 
-Vector3f RayTracer::getRefractDirection(const Vector3f& from_source, const Vector3f& normal, float out_k, float in_k) {
-    float cosi = clamp(from_source * normal, -1.0f, 1.0f);
-    float eta = out_k / in_k;
+Vector3f RayTracer::getRefractDirection(const Vector3f& from_source, const Vector3f& normal, float k_a, float k_b) {
+    float cosa = from_source * normal;
+    float eta = k_a / k_b;
 
-    float k = 1.0f - eta * eta * (1.0f - cosi * cosi);
+    float cosb = sqrtf(1.0f - (1.0f - cosa * cosa) * eta * eta);
 
-    return (from_source * eta + normal * (eta * cosi - sqrtf(k))).normalize();
+    return  (-normal * cosb + (from_source + normal * cosa) * eta).normalize();
 }
 
 Vector3f RayTracer::castRay(
@@ -88,7 +88,7 @@ Vector3f RayTracer::castRay(
         float diff_intensity = std::max(0.0f, to_light_dir * normal);
         
         Vector3f reflect_dir = getReflectDirection(to_light_dir, normal);
-        float spec_intensity = std::pow(std::max(0.0f, reflect_dir * view_dir), nearest_object.material.specular_power);
+        float spec_intensity = fastPow(std::max(0.0f, reflect_dir * view_dir), nearest_object.material.specular_power);
 
         diffuse += lights[i].color * lights[i].intensity * diff_intensity;
         specular += lights[i].color * lights[i].intensity * spec_intensity;
