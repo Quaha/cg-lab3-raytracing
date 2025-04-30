@@ -10,8 +10,6 @@
 #include "PNGsaver.hpp"
 #include "RayTracer.hpp"
 
-SceneManager::SceneManager(unsigned int width, unsigned int height) : width(width), height(height) {}
-
 void initObjects1(std::vector<Primitive>& objects) {
 
     Material red_surface(Vector3f(0.8f, 0.0f, 0.0f), 1.0f, 200, 1.5f, true, 0.1f, true, 0.1f, 1.5f);
@@ -29,7 +27,7 @@ void initObjects1(std::vector<Primitive>& objects) {
     objects.push_back(Primitive(Vector3f(1.2f, -0.1f, -0.36f), 0.4f, reflector_surface));
     objects.push_back(Primitive(Vector3f(-1.3f, -0.3f, 0.27f), 0.34f, reflector_surface));
 
-    objects.push_back(Primitive(Vector3f(0.0f, 1.0f, 0.0f), Vector3f(1.0f, 1.0f, 0.0f), Vector3f(0.0f, 1.0f, 1.0f), red_surface));
+    //objects.push_back(Primitive(Vector3f(0.0f, 1.0f, 0.0f), Vector3f(1.0f, 1.0f, 0.0f), Vector3f(0.0f, 1.0f, 1.0f), red_surface));
 }
 
 void initCameras1(std::vector<Camera>& cameras) {
@@ -59,14 +57,14 @@ void initLights1(std::vector<Light>& lights) {
     lights.push_back(Light(Vector3f(-2.0f, 0.0f, 2.0f), 0.8f, Vector3f(1.0f, 1.0f, 1.0f)));
 }
 
-void SceneManager::loadScene(size_t scene_id, const std::string& scene_name) {
+void SceneManager::loadScene(size_t scene_id, const std::string& title) {
     switch (scene_id) {
     case 0:
         initObjects1(objects);
         initCameras1(cameras);
         initLights1(lights);
 
-        this->scene_name = scene_name;
+        this->title = title;
         break;
 
     default:
@@ -80,10 +78,10 @@ void SceneManager::clearScene() {
     cameras.clear();
     lights.clear();
 
-    scene_name = "";
+    title = "";
 }
 
-void SceneManager::render() {
+void SceneManager::renderPhotos(unsigned int width, unsigned int height) {
 
     for (size_t k = 0; k < cameras.size(); ++k) {
         const Camera& camera = cameras[k];
@@ -113,6 +111,7 @@ void SceneManager::render() {
                 frame_buffer[j + i * width] = RayTracer::castRay(ray, objects, lights);
             }
         }
-        PNGsaver::saveAsPNG(std::format("{}_{}.png", scene_name, k + 1), frame_buffer, width, height);
+        PNGsaver::saveAsPNG(std::format("{}_{}.png", title, k + 1), frame_buffer, width, height);
+        std::cout << "Rendering Time (ms): " << std::clock() << std::endl;
     }
 }

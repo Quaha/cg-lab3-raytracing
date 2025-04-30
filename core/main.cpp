@@ -3,14 +3,18 @@
 
 #include "SceneManager.hpp"
 
+#include "Window.hpp"
+
 int main() {
-
-    SceneManager scene(1920, 1080);
+    
+    SceneManager scene;
     scene.loadScene(0, "balls");
-    scene.render();
-    scene.clearScene();
 
-    std::cout << "Rendering Time (ms): " << std::clock() << "\n";
+    Window window(1920, 1080, "RayTracer");
+    window.renderScene(scene);
+
+    // scene.renderPhotos(1920, 1080);
+    scene.clearScene();
 
     return 0;
 }
